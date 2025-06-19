@@ -1,8 +1,8 @@
 resource "helm_release" "argocd_applications" {
-  name       = "argocd-applications"
-  chart      = "../helm/argocd-applications"
+  name  = "argocd-applications"
+  chart = "../helm/argocd-applications"
 
-  namespace  = var.namespace
+  namespace        = var.namespace
   create_namespace = true
 
   values = [
