@@ -21,15 +21,15 @@ jobs:
 
       - name: "Setup Terraform"
         uses: hashicorp/setup-terraform@v3
-      
-      - name: "Move to terraform directory"
-        run: cd terraform
 
       - name: "Terraform Init"
+        working-directory: terraform
         run: terraform init -input=false
       
       - name: "Terraform Validate"
+        working-directory: terraform
         run: terraform validate
 
       - name: "Terraform Destroy"
+        working-directory: terraform
         run: terraform destroy -auto-approve -input=false
