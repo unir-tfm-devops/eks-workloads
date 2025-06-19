@@ -1,0 +1,19 @@
+replicaCount: 1
+
+image:
+  repository: 703671900078.dkr.ecr.us-east-1.amazonaws.com/spring-boot-template
+  tag: 0.2.0
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "512Mi"
+    cpu: "500m"
