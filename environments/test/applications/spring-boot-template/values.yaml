@@ -1,3 +1,5 @@
+nameOverride: "spring-boot-template"
+fullnameOverride: "spring-boot-template"
 replicaCount: 1
 
 image:
@@ -17,3 +19,13 @@ resources:
   limits:
     memory: "512Mi"
     cpu: "500m"
+
+env:
+  DB_URL: "jdbc:postgresql://public-postgres-db.c0li4ko84rxt.us-east-1.rds.amazonaws.com:5432/postgres"
+  DB_USERNAME: "postgres"
+
+secrets:
+  enabled: true
+  secretName: "spring-boot-template-secret"
+  data:
+    DB_PASSWORD: "postgres"
