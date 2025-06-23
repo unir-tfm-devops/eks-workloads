@@ -4,7 +4,7 @@ spring-boot-template:
   replicaCount: 1
   image:
     repository: 703671900078.dkr.ecr.us-east-1.amazonaws.com/spring-boot-template
-    tag: 2.0.0
+    tag: 3.0.0
     pullPolicy: IfNotPresent
   service:
     type: ClusterIP
