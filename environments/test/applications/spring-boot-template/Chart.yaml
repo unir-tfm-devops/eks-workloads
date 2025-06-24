@@ -4,5 +4,5 @@ version: 1.0.0
 description: Helm chart for spring-boot-template deployment
 dependencies:
   - name: spring-boot-template
-    version: 0.4.0
+    version: 0.4.0-1-g139201d
     repository: "http://3.238.99.68"
