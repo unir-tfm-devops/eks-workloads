@@ -153,3 +153,52 @@ jobs:
           git add environments/test/applications/${{ needs.extract_info.outputs.application-name }}/
           git commit -m "Add ${{ needs.extract_info.outputs.application-name }} application configuration for test environment"
           git push origin feature/new-application-${{ env.NAME }}-test
+
+  create-test-pr:
+    name: Create Test PR
+    needs: [app-config-test-changes, extract_info]
+    runs-on: ubuntu-latest
+    outputs:
+      pr_url: ${{ env.PR_URL }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Get Token From GitHub APP
+        id: get_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.UNIR_TFM_APP_ID }}
+          private-key: ${{ secrets.UNIR_TFM_APP_PRIVATE_KEY }}
+          repositories: "eks-workloads"
+
+      - name: Create Pull Request
+        id: create_pr
+        env:
+          NAME: ${{ needs.extract_info.outputs.application-name }}
+          GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          PR_URL=$(gh pr create \
+            -B main \
+            -H feature/new-application-${{ env.NAME }}-test \
+            -t "Add new application to test environment: ${{ env.NAME }}" \
+            -b "### Summary
+            This PR adds a new application as requested in [Issue #${{ env.ISSUE_NUMBER }}](${{ env.ISSUE_URL }}).
+
+            **Application Name:** ${{ env.NAME }}
+            **Environment:** test
+
+            ### Changes Made
+            - Added ArgoCD application configuration to test environment
+            - Created application Chart.yaml with dependencies
+            - Created application values.yaml from source repository
+
+            ### Checklist
+            - [ ] Verify application name and configuration
+            - [ ] Confirm Helm chart dependencies are correct
+            - [ ] Validate ArgoCD application syntax
+            - [ ] Merge once validated")
+
+          echo "PR_URL=$PR_URL" >> $GITHUB_ENV
