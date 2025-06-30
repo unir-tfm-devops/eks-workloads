@@ -2,6 +2,9 @@ name: "Create ArgoCD Applications"
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 jobs:
   terraform:

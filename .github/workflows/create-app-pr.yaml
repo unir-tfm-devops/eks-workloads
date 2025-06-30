@@ -1,0 +1,46 @@
+name: "Create Application PR"
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  extract_info:
+    name: Extract Issue Information
+    if: contains(github.event.issue.labels.*.name, 'new-app')
+    runs-on: ubuntu-latest
+    outputs:
+      name: ${{ steps.extract_info.outputs.NAME }}
+      description: ${{ steps.extract_info.outputs.DESCRIPTION }}
+      environment: ${{ steps.extract_info.outputs.ENVIRONMENT }}
+      helm_chart_name: ${{ steps.extract_info.outputs.HELM_CHART_NAME }}
+      helm_path: ${{ steps.extract_info.outputs.HELM_PATH }}
+      app_version: ${{ steps.extract_info.outputs.APP_VERSION }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Parse Issue Body
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          echo "$ISSUE_BODY" > issue_body.md
+          python scripts/extract-app-info.py issue_body.md
+
+      - name: Extract Repo Information
+        id: extract_info
+        run: |
+          echo "NAME=$(grep 'Name:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
+          echo "REPOSITORY_NAME=$(grep 'Repository Name:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
+          echo "HELM_CHART_NAME=$(grep 'Helm Chart Name:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
+          echo "HELM_PATH=$(grep 'Helm Path:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
+          echo "APP_VERSION=$(grep 'Application Version:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
+          echo "ENVIRONMENT=$(grep 'Environment:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
+
+      - name: Print Extracted Information
+        run: |
+          echo "Name: ${{ steps.extract_info.outputs.NAME }}"
+          echo "Repository Name: ${{ steps.extract_info.outputs.REPOSITORY_NAME }}"
+          echo "Helm Chart Name: ${{ steps.extract_info.outputs.HELM_CHART_NAME }}"
+          echo "Helm Path: ${{ steps.extract_info.outputs.HELM_PATH }}"
+          echo "Application Version: ${{ steps.extract_info.outputs.APP_VERSION }}"
+          echo "Environment: ${{ steps.extract_info.outputs.ENVIRONMENT }}"
