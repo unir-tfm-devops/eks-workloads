@@ -9,8 +9,8 @@ jobs:
     if: contains(github.event.issue.labels.*.name, 'new-app')
     runs-on: ubuntu-latest
     outputs:
-      name: ${{ steps.extract_info.outputs.NAME }}
-      description: ${{ steps.extract_info.outputs.DESCRIPTION }}
+      application-name: ${{ steps.extract_info.outputs.APPLICATION_NAME }}
+      repository-name: ${{ steps.extract_info.outputs.REPOSITORY_NAME }}
       environment: ${{ steps.extract_info.outputs.ENVIRONMENT }}
       helm_chart_name: ${{ steps.extract_info.outputs.HELM_CHART_NAME }}
       helm_path: ${{ steps.extract_info.outputs.HELM_PATH }}
@@ -29,7 +29,7 @@ jobs:
       - name: Extract Repo Information
         id: extract_info
         run: |
-          echo "NAME=$(grep 'Name:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
+          echo "APPLICATION_NAME=$(grep 'Application Name:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
           echo "REPOSITORY_NAME=$(grep 'Repository Name:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
           echo "HELM_CHART_NAME=$(grep 'Helm Chart Name:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
           echo "HELM_PATH=$(grep 'Helm Path:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
@@ -38,7 +38,7 @@ jobs:
 
       - name: Print Extracted Information
         run: |
-          echo "Name: ${{ steps.extract_info.outputs.NAME }}"
+          echo "Application Name: ${{ steps.extract_info.outputs.APPLICATION_NAME }}"
           echo "Repository Name: ${{ steps.extract_info.outputs.REPOSITORY_NAME }}"
           echo "Helm Chart Name: ${{ steps.extract_info.outputs.HELM_CHART_NAME }}"
           echo "Helm Path: ${{ steps.extract_info.outputs.HELM_PATH }}"

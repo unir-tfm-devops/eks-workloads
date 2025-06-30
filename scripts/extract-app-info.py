@@ -13,7 +13,7 @@ def extract_app_info(file_path):
     environment = re.search(r'### Environment\n\n(.*?)\n', content, re.DOTALL)
     
     extracted_info = {
-        "Name": app_name.group(1).strip() if app_name else "Not found",
+        "Application Name": app_name.group(1).strip() if app_name else "Not found",
         "Repository Name": repo_name.group(1).strip() if repo_name else "Not found",
         "Helm Chart Name": helm_chart_name.group(1).strip() if helm_chart_name else "Not found",
         "Helm Path": helm_path.group(1).strip() if helm_path else "Not found",
