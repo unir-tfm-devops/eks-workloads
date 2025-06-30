@@ -12,9 +12,9 @@ jobs:
       application-name: ${{ steps.extract_info.outputs.APPLICATION_NAME }}
       repository-name: ${{ steps.extract_info.outputs.REPOSITORY_NAME }}
       environment: ${{ steps.extract_info.outputs.ENVIRONMENT }}
-      helm_chart_name: ${{ steps.extract_info.outputs.HELM_CHART_NAME }}
-      helm_path: ${{ steps.extract_info.outputs.HELM_PATH }}
-      app_version: ${{ steps.extract_info.outputs.APP_VERSION }}
+      helm-chart-name: ${{ steps.extract_info.outputs.HELM_CHART_NAME }}
+      helm-path: ${{ steps.extract_info.outputs.HELM_PATH }}
+      app-version: ${{ steps.extract_info.outputs.APP_VERSION }}
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -45,8 +45,8 @@ jobs:
           echo "Application Version: ${{ steps.extract_info.outputs.APP_VERSION }}"
           echo "Environment: ${{ steps.extract_info.outputs.ENVIRONMENT }}"
 
-  argo-app-test-changes:
-    name: Argo App Test Changes
+  argo-test-changes:
+    name: ArgoCD App Test Changes
     if: ${{ needs.extract_info.outputs.environment == 'test' || needs.extract_info.outputs.environment == 'both' }}
     needs: [extract_info]
     runs-on: ubuntu-latest
@@ -68,7 +68,7 @@ jobs:
           APP_NAME="${{ needs.extract_info.outputs.application-name }}-test"
 
           # Use yq to add the new application configuration
-          yq eval ".applications.$APP_NAME = {\"project\": \"default\", \"source\": {\"path\": \"${{ needs.extract_info.outputs.HELM_PATH }}\"}, \"destination\": {\"namespace\": \"test\"}}" -i environments/test/configuration/values.yaml
+          yq eval ".applications.$APP_NAME = {\"project\": \"default\", \"source\": {\"path\": \"environments/test/applications/${{ needs.extract_info.outputs.application-name }}\"}, \"destination\": {\"namespace\": \"test\"}}" -i environments/test/configuration/values.yaml
 
       - name: Commit changes
         env:
@@ -79,5 +79,70 @@ jobs:
           git remote set-url origin https://x-access-token:${{ steps.get_token.outputs.token }}@github.com/${{ github.repository }}
           git checkout -b feature/new-application-${{ env.NAME }}-test
           git add environments/test/configuration/values.yaml
-          git commit -m "Modify environments/test/configuration/values.yaml"
+          git commit -m "Add ${{ needs.extract_info.outputs.application-name }} ArgoCD app to test environment"
+          git push origin feature/new-application-${{ env.NAME }}-test
+
+  app-config-test-changes:
+    name: Application Config Test Changes
+    needs: [argo-test-changes, extract_info]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Get Token From GitHub APP
+        id: get_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.UNIR_TFM_APP_ID }}
+          private-key: ${{ secrets.UNIR_TFM_APP_PRIVATE_KEY }}
+          repositories: "eks-workloads"
+
+      - name: Create Application Chart.yaml
+        run: |
+          # Create the application directory
+          mkdir -p environments/test/applications/${{ needs.extract_info.outputs.application-name }}
+
+          # Create Chart.yaml
+          cat > environments/test/applications/${{ needs.extract_info.outputs.application-name }}/Chart.yaml << EOF
+          apiVersion: v2
+          name: ${{ needs.extract_info.outputs.application-name }}
+          version: 1.0.0
+          description: Helm chart for ${{ needs.extract_info.outputs.application-name }} deployment
+          dependencies:
+            - name: ${{ needs.extract_info.outputs.helm-chart-name }}
+              version: ${{ needs.extract_info.outputs.app-version }}
+              repository: "http://3.238.99.68"
+          EOF
+
+      - name: Create Application values.yaml
+        run: |
+          # Clone the original repository to get the values.yaml
+          git clone https://x-access-token:${{ steps.get_token.outputs.token }}@github.com/unir-tfm-devops/${{ needs.extract_info.outputs.repository-name }}.git temp-repo
+          cd temp-repo
+
+          # Copy the values.yaml from the helm-chart-path and wrap it under the app name
+          if [ -f "${{ needs.extract_info.outputs.helm-path }}/values.yaml" ]; then
+            # Use yq to create a new values.yaml with the app name as root key containing the original content
+            yq eval ".${{ needs.extract_info.outputs.application-name }} = load(\"${{ needs.extract_info.outputs.helm-path }}/values.yaml\")" -n > ../environments/test/applications/${{ needs.extract_info.outputs.application-name }}/values.yaml
+            echo "Successfully copied and wrapped values.yaml from ${{ needs.extract_info.outputs.helm-path }}"
+          else
+            echo "Error: values.yaml not found at ${{ needs.extract_info.outputs.helm-path }}/values.yaml"
+            exit 1
+          fi
+
+          # Clean up
+          cd ..
+          rm -rf temp-repo
+
+      - name: Commit Application Config Changes
+        env:
+          NAME: ${{ needs.extract_info.outputs.application-name }}
+        run: |
+          git config --global user.email "unir-tfm-devops[bot]@users.noreply.github.com"
+          git config --global user.name "unir-tfm-devops[bot]"
+          git remote set-url origin https://x-access-token:${{ steps.get_token.outputs.token }}@github.com/${{ github.repository }}
+          git checkout -b feature/new-application-${{ env.NAME }}-test
+          git add environments/test/applications/${{ needs.extract_info.outputs.application-name }}/
+          git commit -m "Add ${{ needs.extract_info.outputs.application-name }} application configuration for test environment"
           git push origin feature/new-application-${{ env.NAME }}-test
