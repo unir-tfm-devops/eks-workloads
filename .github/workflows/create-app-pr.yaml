@@ -121,6 +121,8 @@ jobs:
           git clone https://x-access-token:${{ steps.get_token.outputs.token }}@github.com/unir-tfm-devops/${{ needs.extract_info.outputs.repository-name }}.git temp-repo
           cd temp-repo
 
+          ls -la
+
           # Copy the values.yaml from the helm-chart-path and wrap it under the app name
           if [ -f "${{ needs.extract_info.outputs.helm-path }}/values.yaml" ]; then
             # Use yq to create a new values.yaml with the app name as root key containing the original content
