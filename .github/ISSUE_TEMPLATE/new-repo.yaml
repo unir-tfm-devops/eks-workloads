@@ -1,0 +1,61 @@
+name: "Deploy Application Request"
+description: "Request the deployment of a new application."
+title: "[Deploy Application] <application-name>"
+labels: ["new-app"]
+body:
+  - type: input
+    id: application-name
+    attributes:
+      label: "Application Name"
+      description: "Enter the name of the new application."
+      placeholder: "example-application"
+    validations:
+      required: true
+  
+  - type: input
+    id: repository-name
+    attributes:
+      label: "Repository Name"
+      description: "Enter the name of the repository to deploy the application."
+      placeholder: "example-repository"
+    validations:
+      required: true
+
+  - type: input
+    id: helm-chart-name
+    attributes:
+      label: "Helm Chart Name"
+      description: "Enter the name of the helm chart to deploy the application."
+      placeholder: "example-helm-chart"
+    validations:
+      required: true
+
+  - type: input
+    id: helm-path
+    attributes:
+      label: "Helm Path"
+      description: "Enter the path to the helm chart inside the repository"
+      placeholder: "/helm"
+    validations:
+      required: true
+
+  - type: input
+    id: app-version
+    attributes:
+      label: "Application Version"
+      description: "Enter the version of the application to deploy."
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: "Environment"
+      description: "Select the environment to deploy the application."
+      options:
+        - test
+        - prod
+        - both
+    validations:
+      required: true

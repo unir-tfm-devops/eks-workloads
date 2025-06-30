@@ -6,6 +6,7 @@ resource "helm_release" "argocd_applications" {
   create_namespace = true
 
   values = [
-    file("${path.module}/../environments/test/configuration/values.yaml")
+    file("${path.module}/../environments/test/configuration/values.yaml"),
+    file("${path.module}/../environments/prod/configuration/values.yaml")
   ]
 }

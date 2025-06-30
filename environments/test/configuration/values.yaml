@@ -1,5 +1,5 @@
 applications:
-  spring-boot-template:
+  spring-boot-template-test:
     project: default
     source:
       path: environments/test/applications/spring-boot-template

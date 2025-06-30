@@ -1,0 +1,7 @@
+applications:
+  spring-boot-template-prod:
+    project: default
+    source:
+      path: environments/prod/applications/spring-boot-template
+    destination:
+      namespace: prod
