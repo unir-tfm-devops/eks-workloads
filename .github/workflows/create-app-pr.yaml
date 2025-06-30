@@ -202,3 +202,46 @@ jobs:
             - [ ] Merge once validated")
 
           echo "PR_URL=$PR_URL" >> $GITHUB_ENV
+
+  comment-on-issue-test:
+    name: Comment on Issue Test PR
+    needs: [create-test-pr]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Get Token From GitHub APP
+        id: get_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.UNIR_TFM_APP_ID }}
+          private-key: ${{ secrets.UNIR_TFM_APP_PRIVATE_KEY }}
+          repositories: "eks-workloads"
+
+      - name: Comment on Issue
+        env:
+          GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          TEST_PR_URL: ${{ needs.create-test-pr.outputs.pr_url }}
+        run: |
+          gh issue comment ${{ env.ISSUE_NUMBER }} --body "✅ Pull request has been created to address this issue:
+
+          ## Test Environment PR
+          **PR:** ${{ env.TEST_PR_URL }}
+
+          ### Changes Made
+          - Added ArgoCD application configuration to test environment
+          - Created application Chart.yaml with dependencies
+          - Created application values.yaml from source repository
+
+          ### Next Steps
+          - Review the pull request
+          - Validate the application configuration
+          - Test deployment in test environment
+          - Merge once validated
+
+          ## Summary
+          - **Test Environment PR:** ${{ env.TEST_PR_URL }}
+
+          Please review the pull request and merge once validated. The application will be deployed to the test environment after merging."
