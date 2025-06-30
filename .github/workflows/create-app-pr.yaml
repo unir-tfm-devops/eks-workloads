@@ -124,7 +124,7 @@ jobs:
           ls -la
 
           # Copy the values.yaml from the helm-chart-path and wrap it under the app name
-          if [ -f "${{ needs.extract_info.outputs.helm-path }}/values.yaml" ]; then
+          if [ -f ".${{ needs.extract_info.outputs.helm-path }}/values.yaml" ]; then
             # Use yq to create a new values.yaml with the app name as root key containing the original content
             yq eval ".${{ needs.extract_info.outputs.application-name }} = load(\"${{ needs.extract_info.outputs.helm-path }}/values.yaml\")" -n > ../environments/test/applications/${{ needs.extract_info.outputs.application-name }}/values.yaml
             echo "Successfully copied and wrapped values.yaml from ${{ needs.extract_info.outputs.helm-path }}"
