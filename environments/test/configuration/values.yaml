@@ -5,3 +5,9 @@ applications:
       path: environments/test/applications/spring-boot-template
     destination:
       namespace: test
+  products-search-api-test:
+    project: default
+    source:
+      path: environments/test/applications/products-search-api
+    destination:
+      namespace: test
