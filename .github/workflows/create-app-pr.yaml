@@ -47,7 +47,7 @@ jobs:
 
   argo-app-test-changes:
     name: Argo App Test Changes
-    if: ${{ needs.extract_info.outputs.ENVIRONMENT == 'test' || needs.extract_info.outputs.ENVIRONMENT == 'both' }}
+    if: ${{ needs.extract_info.outputs.environment == 'test' || needs.extract_info.outputs.environment == 'both' }}
     needs: [extract_info]
     runs-on: ubuntu-latest
     steps:
@@ -65,14 +65,14 @@ jobs:
       - name: Modify values.yaml for Test Environment
         run: |
           # Generate the application name for test environment
-          APP_NAME="${{ needs.extract_info.outputs.APPLICATION_NAME }}-test"
+          APP_NAME="${{ needs.extract_info.outputs.application-name }}-test"
 
           # Use yq to add the new application configuration
           yq eval ".applications.$APP_NAME = {\"project\": \"default\", \"source\": {\"path\": \"${{ needs.extract_info.outputs.HELM_PATH }}\"}, \"destination\": {\"namespace\": \"test\"}}" -i environments/test/configuration/values.yaml
 
       - name: Commit changes
         env:
-          NAME: ${{ needs.extract_info.outputs.APPLICATION_NAME }}
+          NAME: ${{ needs.extract_info.outputs.application-name }}
         run: |
           git config --global user.email "unir-tfm-devops[bot]@users.noreply.github.com"
           git config --global user.name "unir-tfm-devops[bot]"
