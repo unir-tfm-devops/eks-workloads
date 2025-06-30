@@ -121,8 +121,6 @@ jobs:
           git clone https://x-access-token:${{ steps.get_token.outputs.token }}@github.com/unir-tfm-devops/${{ needs.extract_info.outputs.repository-name }}.git temp-repo
           cd temp-repo
 
-          ls -la
-
           # Copy the values.yaml from the helm-chart-path and wrap it under the app name
           if [ -f ".${{ needs.extract_info.outputs.helm-path }}/values.yaml" ]; then
             # Use yq to create a new values.yaml with the app name as root key containing the original content
@@ -199,7 +197,9 @@ jobs:
             - [ ] Verify application name and configuration
             - [ ] Confirm Helm chart dependencies are correct
             - [ ] Validate ArgoCD application syntax
-            - [ ] Merge once validated")
+            - [ ] Merge once validated
+
+            Closes #${{ env.ISSUE_NUMBER }}")
 
           echo "PR_URL=$PR_URL" >> $GITHUB_ENV
 
@@ -245,3 +245,204 @@ jobs:
           - **Test Environment PR:** ${{ env.TEST_PR_URL }}
 
           Please review the pull request and merge once validated. The application will be deployed to the test environment after merging."
+
+  argo-prod-changes:
+    name: ArgoCD App Prod Changes
+    if: ${{ needs.extract_info.outputs.environment == 'prod' || needs.extract_info.outputs.environment == 'both' }}
+    needs: [extract_info]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Get Token From GitHub APP
+        id: get_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.UNIR_TFM_APP_ID }}
+          private-key: ${{ secrets.UNIR_TFM_APP_PRIVATE_KEY }}
+          repositories: "eks-workloads"
+
+      - name: Modify values.yaml for Prod Environment
+        run: |
+          # Generate the application name for prod environment
+          APP_NAME="${{ needs.extract_info.outputs.application-name }}-prod"
+
+          # Use yq to add the new application configuration
+          yq eval ".applications.$APP_NAME = {\"project\": \"default\", \"source\": {\"path\": \"environments/prod/applications/${{ needs.extract_info.outputs.application-name }}\"}, \"destination\": {\"namespace\": \"prod\"}}" -i environments/prod/configuration/values.yaml
+
+      - name: Commit changes
+        env:
+          NAME: ${{ needs.extract_info.outputs.application-name }}
+        run: |
+          git config --global user.email "unir-tfm-devops[bot]@users.noreply.github.com"
+          git config --global user.name "unir-tfm-devops[bot]"
+          git remote set-url origin https://x-access-token:${{ steps.get_token.outputs.token }}@github.com/${{ github.repository }}
+          git checkout -b feature/new-application-${{ env.NAME }}-prod
+          git add environments/prod/configuration/values.yaml
+          git commit -m "Add ${{ needs.extract_info.outputs.application-name }} ArgoCD app to prod environment"
+          git push origin feature/new-application-${{ env.NAME }}-prod
+
+  app-config-prod-changes:
+    name: Application Config Prod Changes
+    needs: [argo-prod-changes, extract_info]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Get Token From GitHub APP
+        id: get_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.UNIR_TFM_APP_ID }}
+          private-key: ${{ secrets.UNIR_TFM_APP_PRIVATE_KEY }}
+          repositories: "eks-workloads"
+
+      - name: Create Application Chart.yaml
+        run: |
+          # Create the application directory
+          mkdir -p environments/prod/applications/${{ needs.extract_info.outputs.application-name }}
+
+          # Create Chart.yaml
+          cat > environments/prod/applications/${{ needs.extract_info.outputs.application-name }}/Chart.yaml << EOF
+          apiVersion: v2
+          name: ${{ needs.extract_info.outputs.application-name }}
+          version: 1.0.0
+          description: Helm chart for ${{ needs.extract_info.outputs.application-name }} deployment
+          dependencies:
+            - name: ${{ needs.extract_info.outputs.helm-chart-name }}
+              version: ${{ needs.extract_info.outputs.app-version }}
+              repository: "http://3.238.99.68"
+          EOF
+
+      - name: Create Application values.yaml
+        run: |
+          # Clone the original repository to get the values.yaml
+          git clone https://x-access-token:${{ steps.get_token.outputs.token }}@github.com/unir-tfm-devops/${{ needs.extract_info.outputs.repository-name }}.git temp-repo
+          cd temp-repo
+
+          # Copy the values.yaml from the helm-chart-path and wrap it under the app name
+          if [ -f ".${{ needs.extract_info.outputs.helm-path }}/values.yaml" ]; then
+            # Use yq to create a new values.yaml with the app name as root key containing the original content
+            yq eval ".${{ needs.extract_info.outputs.application-name }} = load(\".${{ needs.extract_info.outputs.helm-path }}/values.yaml\")" -n > ../environments/prod/applications/${{ needs.extract_info.outputs.application-name }}/values.yaml
+            echo "Successfully copied and wrapped values.yaml from ${{ needs.extract_info.outputs.helm-path }}"
+          else
+            echo "Error: values.yaml not found at .${{ needs.extract_info.outputs.helm-path }}/values.yaml"
+            exit 1
+          fi
+
+          # Clean up
+          cd ..
+          rm -rf temp-repo
+
+      - name: Commit Application Config Changes
+        env:
+          NAME: ${{ needs.extract_info.outputs.application-name }}
+        run: |
+          git config --global user.email "unir-tfm-devops[bot]@users.noreply.github.com"
+          git config --global user.name "unir-tfm-devops[bot]"
+          git remote set-url origin https://x-access-token:${{ steps.get_token.outputs.token }}@github.com/${{ github.repository }}
+
+          # Checkout the existing branch and pull latest changes
+          git fetch origin
+          git checkout feature/new-application-${{ env.NAME }}-prod
+          git pull origin feature/new-application-${{ env.NAME }}-prod
+
+          git add environments/prod/applications/${{ needs.extract_info.outputs.application-name }}/
+          git commit -m "Add ${{ needs.extract_info.outputs.application-name }} application configuration for prod environment"
+          git push origin feature/new-application-${{ env.NAME }}-prod
+
+  create-prod-pr:
+    name: Create Prod PR
+    needs: [app-config-prod-changes, extract_info]
+    runs-on: ubuntu-latest
+    outputs:
+      pr_url: ${{ env.PR_URL }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Get Token From GitHub APP
+        id: get_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.UNIR_TFM_APP_ID }}
+          private-key: ${{ secrets.UNIR_TFM_APP_PRIVATE_KEY }}
+          repositories: "eks-workloads"
+
+      - name: Create Pull Request
+        id: create_pr
+        env:
+          NAME: ${{ needs.extract_info.outputs.application-name }}
+          GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          PR_URL=$(gh pr create \
+            -B main \
+            -H feature/new-application-${{ env.NAME }}-prod \
+            -t "Add new application to prod environment: ${{ env.NAME }}" \
+            -b "### Summary
+            This PR adds a new application as requested in [Issue #${{ env.ISSUE_NUMBER }}](${{ env.ISSUE_URL }}).
+
+            **Application Name:** ${{ env.NAME }}
+            **Environment:** prod
+
+            ### Changes Made
+            - Added ArgoCD application configuration to prod environment
+            - Created application Chart.yaml with dependencies
+            - Created application values.yaml from source repository
+
+            ### Checklist
+            - [ ] Verify application name and configuration
+            - [ ] Confirm Helm chart dependencies are correct
+            - [ ] Validate ArgoCD application syntax
+            - [ ] Merge once validated
+
+            Closes #${{ env.ISSUE_NUMBER }}")
+
+          echo "PR_URL=$PR_URL" >> $GITHUB_ENV
+
+  comment-on-issue-prod:
+    name: Comment on Issue Prod PR
+    needs: [create-prod-pr]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Get Token From GitHub APP
+        id: get_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.UNIR_TFM_APP_ID }}
+          private-key: ${{ secrets.UNIR_TFM_APP_PRIVATE_KEY }}
+          repositories: "eks-workloads"
+
+      - name: Comment on Issue
+        env:
+          GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          PROD_PR_URL: ${{ needs.create-prod-pr.outputs.pr_url }}
+        run: |
+          gh issue comment ${{ env.ISSUE_NUMBER }} --body "✅ Pull request has been created to address this issue:
+
+          ## Prod Environment PR
+          **PR:** ${{ env.PROD_PR_URL }}
+
+          ### Changes Made
+          - Added ArgoCD application configuration to prod environment
+          - Created application Chart.yaml with dependencies
+          - Created application values.yaml from source repository
+
+          ### Next Steps
+          - Review the pull request
+          - Validate the application configuration
+          - Test deployment in prod environment
+          - Merge once validated
+
+          ## Summary
+          - **Prod Environment PR:** ${{ env.PROD_PR_URL }}
+
+          Please review the pull request and merge once validated. The application will be deployed to the prod environment after merging."
