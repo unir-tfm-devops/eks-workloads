@@ -44,3 +44,40 @@ jobs:
           echo "Helm Path: ${{ steps.extract_info.outputs.HELM_PATH }}"
           echo "Application Version: ${{ steps.extract_info.outputs.APP_VERSION }}"
           echo "Environment: ${{ steps.extract_info.outputs.ENVIRONMENT }}"
+
+  argo-app-test-changes:
+    name: Argo App Test Changes
+    if: ${{ needs.extract_info.outputs.ENVIRONMENT == 'test' || needs.extract_info.outputs.ENVIRONMENT == 'both' }}
+    needs: [extract_info]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Get Token From GitHub APP
+        id: get_token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ vars.UNIR_TFM_APP_ID }}
+          private-key: ${{ secrets.UNIR_TFM_APP_PRIVATE_KEY }}
+          repositories: "eks-workloads"
+
+      - name: Modify values.yaml for Test Environment
+        run: |
+          # Generate the application name for test environment
+          APP_NAME="${{ needs.extract_info.outputs.APPLICATION_NAME }}-test"
+
+          # Use yq to add the new application configuration
+          yq eval ".applications.$APP_NAME = {\"project\": \"default\", \"source\": {\"path\": \"${{ needs.extract_info.outputs.HELM_PATH }}\"}, \"destination\": {\"namespace\": \"test\"}}" -i environments/test/configuration/values.yaml
+
+      - name: Commit changes
+        env:
+          NAME: ${{ needs.extract_info.outputs.APPLICATION_NAME }}
+        run: |
+          git config --global user.email "unir-tfm-devops[bot]@users.noreply.github.com"
+          git config --global user.name "unir-tfm-devops[bot]"
+          git remote set-url origin https://x-access-token:${{ steps.get_token.outputs.token }}@github.com/${{ github.repository }}
+          git checkout -b feature/new-application-${{ env.NAME }}-test
+          git add environments/test/configuration/values.yaml
+          git commit -m "Modify environments/test/configuration/values.yaml"
+          git push origin feature/new-application-${{ env.NAME }}-test
