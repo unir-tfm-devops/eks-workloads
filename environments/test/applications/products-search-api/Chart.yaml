@@ -1,0 +1,8 @@
+apiVersion: v2
+name: products-search-api
+version: 1.0.0
+description: Helm chart for products-search-api deployment
+dependencies:
+  - name: products-search-api
+    version: 0.1.0
+    repository: "http://3.238.99.68"
