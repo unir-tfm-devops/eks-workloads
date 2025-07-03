@@ -165,7 +165,24 @@ jobs:
             -B main \
             -H feature/new-application-${{ env.NAME }}-${{ env.ENV }} \
             -t "Add new application to ${{ env.ENV }} environment: ${{ env.NAME }}" \
-            -b "### Summary\nThis PR adds a new application as requested in [Issue #${{ env.ISSUE_NUMBER }}](${{ env.ISSUE_URL }}).\n\n**Application Name:** ${{ env.NAME }}\n**Environment:** ${{ env.ENV }}\n\n### Changes Made\n- Added ArgoCD application configuration to ${{ env.ENV }} environment\n- Created application Chart.yaml with dependencies\n- Created application values.yaml from source repository\n\n### Checklist\n- [ ] Verify application name and configuration\n- [ ] Confirm Helm chart dependencies are correct\n- [ ] Validate ArgoCD application syntax\n- [ ] Merge once validated\n\nCloses #${{ env.ISSUE_NUMBER }}")
+            -b "### Summary
+          This PR adds a new application as requested in [Issue #${{ env.ISSUE_NUMBER }}](${{ env.ISSUE_URL }}).
+
+          **Application Name:** ${{ env.NAME }}
+          **Environment:** ${{ env.ENV }}
+
+          ### Changes Made
+          - Added ArgoCD application configuration to ${{ env.ENV }} environment
+          - Created application Chart.yaml with dependencies
+          - Created application values.yaml from source repository
+
+          ### Checklist
+          - [ ] Verify application name and configuration
+          - [ ] Confirm Helm chart dependencies are correct
+          - [ ] Validate ArgoCD application syntax
+          - [ ] Merge once validated
+
+          Closes #${{ env.ISSUE_NUMBER }}")
 
           echo "PR_URL=$PR_URL" >> $GITHUB_ENV
 
@@ -260,7 +277,23 @@ jobs:
             -B main \
             -H feature/new-${{ env.ENV }}-db-${{ env.NAME }} \
             -t "Add new database for ${{ env.NAME }} in ${{ env.ENV }} environment" \
-            -b "### Summary\nThis PR adds a new database as requested in [Issue #${{ env.ISSUE_NUMBER }}](${{ env.ISSUE_URL }}).\n\n**Application Name:** ${{ env.NAME }}\n**Environment:** ${{ env.ENV }}\n**Database Name:** ${{ env.NAME }}-${{ env.ENV }}\n\n### Changes Made\n- Added new database module configuration for ${{ env.ENV }} environment\n- Database name: ${{ env.NAME }}-${{ env.ENV }}\n- Username: ${{ env.NAME }}-${{ env.ENV }}\n\n### Checklist\n- [ ] Verify database name and configuration\n- [ ] Confirm database credentials are correct\n- [ ] Validate Terraform syntax\n- [ ] Merge once validated\n\nCloses #${{ env.ISSUE_NUMBER }}")
+            -b "### Summary
+          This PR adds a new database as requested in [Issue #${{ env.ISSUE_NUMBER }}](${{ env.ISSUE_URL }}).
+
+          **Application Name:** ${{ env.NAME }}
+          **Environment:** ${{ env.ENV }}
+          **Database Name:** ${{ env.NAME }}-${{ env.ENV }}
+
+          ### Changes Made
+          - Added new database module configuration for ${{ env.ENV }} environment
+          - Database name: ${{ env.NAME }}-${{ env.ENV }}
+          - Username: ${{ env.NAME }}-${{ env.ENV }}
+
+          ### Checklist
+          - [ ] Verify database name and configuration
+          - [ ] Confirm database credentials are correct
+          - [ ] Validate Terraform syntax
+          - [ ] Merge once validated")
 
           echo "PR_URL=$PR_URL" >> $GITHUB_ENV
 
