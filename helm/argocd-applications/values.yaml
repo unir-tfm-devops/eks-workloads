@@ -1,10 +1,13 @@
-# Define your ArgoCD applications here
 applications:
-  # Example application configuration
-  # app-name:
-  #   project: default
-  #   source:
-  #     path: path/to/helm/chart
-  #   destination:
-  #     server: https://kubernetes.default.svc
-  #     namespace: your-namespace 
+  spring-boot-template-test:
+    project: default
+    source:
+      path: environments/test/applications/spring-boot-template
+    destination:
+      namespace: test
+  test-service-test:
+    project: default
+    source:
+      path: environments/test/applications/products-service
+    destination:
+      namespace: test
