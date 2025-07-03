@@ -1,11 +1,23 @@
-resource "helm_release" "argocd_applications" {
+resource "helm_release" "argocd_applications_test" {
   name  = "argocd-applications"
   chart = "../helm/argocd-applications"
 
   namespace        = var.namespace
   create_namespace = true
 
-  values = [for valuesFile in fileset(path.module, "../environments/**/configuration/values.yaml") :
-    file(valuesFile)
+  values = [
+    file("${path.module}/../environments/test/configuration/values.yaml")
+  ]
+}
+
+resource "helm_release" "argocd_applications_prod" {
+  name  = "argocd-applications"
+  chart = "../helm/argocd-applications"
+
+  namespace        = var.namespace
+  create_namespace = true
+
+  values = [
+    file("${path.module}/../environments/prod/configuration/values.yaml")
   ]
 }
