@@ -1,5 +1,5 @@
 resource "helm_release" "argocd_applications_test" {
-  name  = "argocd-applications"
+  name  = "argocd-applications-test"
   chart = "../helm/argocd-applications"
 
   namespace        = var.namespace
@@ -11,7 +11,7 @@ resource "helm_release" "argocd_applications_test" {
 }
 
 resource "helm_release" "argocd_applications_prod" {
-  name  = "argocd-applications"
+  name  = "argocd-applications-prod"
   chart = "../helm/argocd-applications"
 
   namespace        = var.namespace
