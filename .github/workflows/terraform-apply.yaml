@@ -8,6 +8,7 @@ on:
     paths:
       - "environments/test/configuration/values.yaml"
       - "environments/prod/configuration/values.yaml"
+      - "terraform/**"
 
 jobs:
   terraform:
