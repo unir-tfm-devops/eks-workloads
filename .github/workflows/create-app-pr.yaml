@@ -479,8 +479,8 @@ jobs:
             source = "./modules/database"
 
             database_name = "${{ env.NAME }}-test"
-            username = "${{ env.NAME }}-test"
-            password = "${{ env.NAME }}-test"
+            username      = "${{ env.NAME }}-test"
+            password      = "${{ env.NAME }}-test"
 
             depends_on = [time_sleep.wait_for_rds]
 
@@ -580,13 +580,13 @@ jobs:
           ISSUE_NUMBER: ${{ github.event.issue.number }}
           RDS_PR_URL: ${{ needs.create-rds-test-pr.outputs.pr_url }}
         run: |
-          gh issue comment ${{ env.ISSUE_NUMBER }} --body "✅ Database pull request has been created to address this issue:
+          gh issue comment ${{ env.ISSUE_NUMBER }} --body "✅ Test database pull request has been created to address this issue:
 
-          ## Database PR (Must be merged FIRST!)
+          ## Test Database PR (Must be merged FIRST!)
           **PR:** ${{ env.RDS_PR_URL }}
 
           ### ⚠️ Important Merge Order
-          **This database PR must be merged BEFORE the ArgoCD application PRs!**
+          **This database PR must be merged BEFORE the test ArgoCD application PRs!**
 
           ### Changes Made
           - Added new database module configuration for test environment
@@ -594,14 +594,14 @@ jobs:
           - Username: ${{ needs.extract_info.outputs.application-name }}-test
 
           ### Next Steps
-          1. **Review and merge the database PR first**
+          1. **Review and merge the test database PR first**
           2. **Wait for database creation to complete**
-          3. **Then review and merge the ArgoCD application PRs**
+          3. **Then review and merge the test ArgoCD application PRs**
 
           ## Summary
-          - **Database PR:** ${{ env.RDS_PR_URL }}
+          - **Test Database PR:** ${{ env.RDS_PR_URL }}
 
-          Please merge the database PR first, then proceed with the application PRs once the database is ready."
+          Please merge the test database PR first, then proceed with the test application PRs once the database is ready."
 
   rds-prod-changes:
     name: RDS Prod Changes
@@ -635,8 +635,8 @@ jobs:
             source = "./modules/database"
 
             database_name = "${{ env.NAME }}-prod"
-            username = "${{ env.NAME }}-prod"
-            password = "${{ env.NAME }}-prod"
+            username      = "${{ env.NAME }}-prod"
+            password      = "${{ env.NAME }}-prod"
 
             depends_on = [time_sleep.wait_for_rds]
 
