@@ -484,7 +484,7 @@ jobs:
 
             depends_on = [time_sleep.wait_for_rds]
 
-            provderis = {
+            providers = {
               postgresql = postgresql.test
             }
           }
@@ -640,7 +640,7 @@ jobs:
 
             depends_on = [time_sleep.wait_for_rds]
 
-            provderis = {
+            providers = {
               postgresql = postgresql.prod
             }
           }
