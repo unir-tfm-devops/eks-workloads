@@ -9,10 +9,8 @@ jobs:
     if: contains(github.event.issue.labels.*.name, 'new-app')
     runs-on: ubuntu-latest
     outputs:
-      application-name: ${{ steps.extract_info.outputs.APPLICATION_NAME }}
-      repository-name: ${{ steps.extract_info.outputs.REPOSITORY_NAME }}
+      name: ${{ steps.extract_info.outputs.NAME }}
       environment: ${{ steps.extract_info.outputs.ENVIRONMENT }}
-      helm-chart-name: ${{ steps.extract_info.outputs.HELM_CHART_NAME }}
       helm-path: ${{ steps.extract_info.outputs.HELM_PATH }}
       app-version: ${{ steps.extract_info.outputs.APP_VERSION }}
     steps:
@@ -29,18 +27,14 @@ jobs:
       - name: Extract Repo Information
         id: extract_info
         run: |
-          echo "APPLICATION_NAME=$(grep 'Application Name:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
-          echo "REPOSITORY_NAME=$(grep 'Repository Name:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
-          echo "HELM_CHART_NAME=$(grep 'Helm Chart Name:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
+          echo "NAME=$(grep 'Application Name:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
           echo "HELM_PATH=$(grep 'Helm Path:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
           echo "APP_VERSION=$(grep 'Application Version:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
           echo "ENVIRONMENT=$(grep 'Environment:' extracted_info.txt | cut -d':' -f2- | xargs)" >> $GITHUB_OUTPUT
 
       - name: Print Extracted Information
         run: |
-          echo "Application Name: ${{ steps.extract_info.outputs.APPLICATION_NAME }}"
-          echo "Repository Name: ${{ steps.extract_info.outputs.REPOSITORY_NAME }}"
-          echo "Helm Chart Name: ${{ steps.extract_info.outputs.HELM_CHART_NAME }}"
+          echo "Name: ${{ steps.extract_info.outputs.NAME }}"
           echo "Helm Path: ${{ steps.extract_info.outputs.HELM_PATH }}"
           echo "Application Version: ${{ steps.extract_info.outputs.APP_VERSION }}"
           echo "Environment: ${{ steps.extract_info.outputs.ENVIRONMENT }}"
@@ -63,17 +57,14 @@ jobs:
 
       - name: Modify values.yaml for Environment
         run: |
-          # Generate the application name for the environment
-          APP_NAME="${{ needs.extract_info.outputs.application-name }}-${{ needs.extract_info.outputs.environment }}"
+          APP_NAME="${{ needs.extract_info.outputs.name }}-${{ needs.extract_info.outputs.environment }}"
           ENV="${{ needs.extract_info.outputs.environment }}"
           NAMESPACE="${{ needs.extract_info.outputs.environment }}"
-
-          # Use yq to add the new application configuration
-          yq eval ".applications.$APP_NAME = {\"project\": \"default\", \"source\": {\"path\": \"environments/$ENV/applications/${{ needs.extract_info.outputs.application-name }}\"}, \"destination\": {\"namespace\": \"$NAMESPACE\"}}" -i environments/$ENV/configuration/values.yaml
+          yq eval ".applications.$APP_NAME = {\"project\": \"default\", \"source\": {\"path\": \"environments/$ENV/applications/${{ needs.extract_info.outputs.name }}\"}, \"destination\": {\"namespace\": \"$NAMESPACE\"}}" -i environments/$ENV/configuration/values.yaml
 
       - name: Commit changes
         env:
-          NAME: ${{ needs.extract_info.outputs.application-name }}
+          NAME: ${{ needs.extract_info.outputs.name }}
           ENV: ${{ needs.extract_info.outputs.environment }}
         run: |
           git config --global user.email "unir-tfm-devops[bot]@users.noreply.github.com"
@@ -81,7 +72,7 @@ jobs:
           git remote set-url origin https://x-access-token:${{ steps.get_token.outputs.token }}@github.com/${{ github.repository }}
           git checkout -b feature/new-application-${{ env.NAME }}-${{ env.ENV }}
           git add environments/${{ env.ENV }}/configuration/values.yaml
-          git commit -m "Add ${{ needs.extract_info.outputs.application-name }} ArgoCD app to ${{ env.ENV }} environment"
+          git commit -m "Add ${{ needs.extract_info.outputs.name }} ArgoCD app to ${{ env.ENV }} environment"
           git push origin feature/new-application-${{ env.NAME }}-${{ env.ENV }}
 
   app-config-changes:
@@ -102,57 +93,45 @@ jobs:
 
       - name: Create Application Chart.yaml
         run: |
-          # Create the application directory
-          mkdir -p environments/${{ needs.extract_info.outputs.environment }}/applications/${{ needs.extract_info.outputs.application-name }}
-
-          # Create Chart.yaml
-          cat > environments/${{ needs.extract_info.outputs.environment }}/applications/${{ needs.extract_info.outputs.application-name }}/Chart.yaml << EOF
+          mkdir -p environments/${{ needs.extract_info.outputs.environment }}/applications/${{ needs.extract_info.outputs.name }}
+          cat > environments/${{ needs.extract_info.outputs.environment }}/applications/${{ needs.extract_info.outputs.name }}/Chart.yaml << EOF
           apiVersion: v2
-          name: ${{ needs.extract_info.outputs.application-name }}
+          name: ${{ needs.extract_info.outputs.name }}
           version: 1.0.0
-          description: Helm chart for ${{ needs.extract_info.outputs.application-name }} deployment
+          description: Helm chart for ${{ needs.extract_info.outputs.name }} deployment
           dependencies:
-            - name: ${{ needs.extract_info.outputs.helm-chart-name }}
+            - name: ${{ needs.extract_info.outputs.name }}
               version: ${{ needs.extract_info.outputs.app-version }}
               repository: "http://3.238.99.68"
           EOF
 
       - name: Create Application values.yaml
         run: |
-          # Clone the original repository to get the values.yaml
-          git clone https://x-access-token:${{ steps.get_token.outputs.token }}@github.com/unir-tfm-devops/${{ needs.extract_info.outputs.repository-name }}.git temp-repo
+          git clone https://x-access-token:${{ steps.get_token.outputs.token }}@github.com/unir-tfm-devops/${{ needs.extract_info.outputs.name }}.git temp-repo
           cd temp-repo
-
-          # Copy the values.yaml from the helm-chart-path and wrap it under the app name
           if [ -f ".${{ needs.extract_info.outputs.helm-path }}/values.yaml" ]; then
-            # Use yq to create a new values.yaml with the app name as root key containing the original content
-            yq eval ".${{ needs.extract_info.outputs.application-name }} = load(\".${{ needs.extract_info.outputs.helm-path }}/values.yaml\")" -n > ../environments/${{ needs.extract_info.outputs.environment }}/applications/${{ needs.extract_info.outputs.application-name }}/values.yaml
+            yq eval ".${{ needs.extract_info.outputs.name }} = load(\".${{ needs.extract_info.outputs.helm-path }}/values.yaml\")" -n > ../environments/${{ needs.extract_info.outputs.environment }}/applications/${{ needs.extract_info.outputs.name }}/values.yaml
             echo "Successfully copied and wrapped values.yaml from ${{ needs.extract_info.outputs.helm-path }}"
           else
             echo "Error: values.yaml not found at .${{ needs.extract_info.outputs.helm-path }}/values.yaml"
             exit 1
           fi
-
-          # Clean up
           cd ..
           rm -rf temp-repo
 
       - name: Commit Application Config Changes
         env:
-          NAME: ${{ needs.extract_info.outputs.application-name }}
+          NAME: ${{ needs.extract_info.outputs.name }}
           ENV: ${{ needs.extract_info.outputs.environment }}
         run: |
           git config --global user.email "unir-tfm-devops[bot]@users.noreply.github.com"
           git config --global user.name "unir-tfm-devops[bot]"
           git remote set-url origin https://x-access-token:${{ steps.get_token.outputs.token }}@github.com/${{ github.repository }}
-
-          # Checkout the existing branch and pull latest changes
           git fetch origin
           git checkout feature/new-application-${{ env.NAME }}-${{ env.ENV }}
           git pull origin feature/new-application-${{ env.NAME }}-${{ env.ENV }}
-
-          git add environments/${{ env.ENV }}/applications/${{ needs.extract_info.outputs.application-name }}/
-          git commit -m "Add ${{ needs.extract_info.outputs.application-name }} application configuration for ${{ env.ENV }} environment"
+          git add environments/${{ env.ENV }}/applications/${{ needs.extract_info.outputs.name }}/
+          git commit -m "Add ${{ needs.extract_info.outputs.name }} application configuration for ${{ env.ENV }} environment"
           git push origin feature/new-application-${{ env.NAME }}-${{ env.ENV }}
 
   create-pr:
@@ -176,7 +155,7 @@ jobs:
       - name: Create Pull Request
         id: create_pr
         env:
-          NAME: ${{ needs.extract_info.outputs.application-name }}
+          NAME: ${{ needs.extract_info.outputs.name }}
           ENV: ${{ needs.extract_info.outputs.environment }}
           GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
           ISSUE_URL: ${{ github.event.issue.html_url }}
@@ -186,24 +165,7 @@ jobs:
             -B main \
             -H feature/new-application-${{ env.NAME }}-${{ env.ENV }} \
             -t "Add new application to ${{ env.ENV }} environment: ${{ env.NAME }}" \
-            -b "### Summary
-            This PR adds a new application as requested in [Issue #${{ env.ISSUE_NUMBER }}](${{ env.ISSUE_URL }}).
-
-            **Application Name:** ${{ env.NAME }}
-            **Environment:** ${{ env.ENV }}
-
-            ### Changes Made
-            - Added ArgoCD application configuration to ${{ env.ENV }} environment
-            - Created application Chart.yaml with dependencies
-            - Created application values.yaml from source repository
-
-            ### Checklist
-            - [ ] Verify application name and configuration
-            - [ ] Confirm Helm chart dependencies are correct
-            - [ ] Validate ArgoCD application syntax
-            - [ ] Merge once validated
-
-            Closes #${{ env.ISSUE_NUMBER }}")
+            -b "### Summary\nThis PR adds a new application as requested in [Issue #${{ env.ISSUE_NUMBER }}](${{ env.ISSUE_URL }}).\n\n**Application Name:** ${{ env.NAME }}\n**Environment:** ${{ env.ENV }}\n\n### Changes Made\n- Added ArgoCD application configuration to ${{ env.ENV }} environment\n- Created application Chart.yaml with dependencies\n- Created application values.yaml from source repository\n\n### Checklist\n- [ ] Verify application name and configuration\n- [ ] Confirm Helm chart dependencies are correct\n- [ ] Validate ArgoCD application syntax\n- [ ] Merge once validated\n\nCloses #${{ env.ISSUE_NUMBER }}")
 
           echo "PR_URL=$PR_URL" >> $GITHUB_ENV
 
@@ -230,10 +192,9 @@ jobs:
       - name: Add new DB to environment
         working-directory: infra-rds
         env:
-          NAME: ${{ needs.extract_info.outputs.application-name }}
+          NAME: ${{ needs.extract_info.outputs.name }}
           ENV: ${{ needs.extract_info.outputs.environment }}
         run: |
-          # Add new Database module to databases-$ENV.tf
           cat <<EOF >> databases-${{ env.ENV }}.tf
 
           module "${{ env.NAME }}-${{ env.ENV }}" {
@@ -254,7 +215,7 @@ jobs:
       - name: Commit RDS database changes
         working-directory: infra-rds
         env:
-          NAME: ${{ needs.extract_info.outputs.application-name }}
+          NAME: ${{ needs.extract_info.outputs.name }}
           ENV: ${{ needs.extract_info.outputs.environment }}
         run: |
           git config --global user.email "unir-tfm-devops[bot]@users.noreply.github.com"
@@ -289,7 +250,7 @@ jobs:
       - name: Create Pull Request
         id: create_pr
         env:
-          NAME: ${{ needs.extract_info.outputs.application-name }}
+          NAME: ${{ needs.extract_info.outputs.name }}
           ENV: ${{ needs.extract_info.outputs.environment }}
           GITHUB_TOKEN: ${{ steps.get_token.outputs.token }}
           ISSUE_URL: ${{ github.event.issue.html_url }}
@@ -299,25 +260,7 @@ jobs:
             -B main \
             -H feature/new-${{ env.ENV }}-db-${{ env.NAME }} \
             -t "Add new database for ${{ env.NAME }} in ${{ env.ENV }} environment" \
-            -b "### Summary
-            This PR adds a new database as requested in [Issue #${{ env.ISSUE_NUMBER }}](${{ env.ISSUE_URL }}).
-
-            **Application Name:** ${{ env.NAME }}
-            **Environment:** ${{ env.ENV }}
-            **Database Name:** ${{ env.NAME }}-${{ env.ENV }}
-
-            ### Changes Made
-            - Added new database module configuration for ${{ env.ENV }} environment
-            - Database name: ${{ env.NAME }}-${{ env.ENV }}
-            - Username: ${{ env.NAME }}-${{ env.ENV }}
-
-            ### Checklist
-            - [ ] Verify database name and configuration
-            - [ ] Confirm database credentials are correct
-            - [ ] Validate Terraform syntax
-            - [ ] Merge once validated
-
-            Closes #${{ env.ISSUE_NUMBER }}")
+            -b "### Summary\nThis PR adds a new database as requested in [Issue #${{ env.ISSUE_NUMBER }}](${{ env.ISSUE_URL }}).\n\n**Application Name:** ${{ env.NAME }}\n**Environment:** ${{ env.ENV }}\n**Database Name:** ${{ env.NAME }}-${{ env.ENV }}\n\n### Changes Made\n- Added new database module configuration for ${{ env.ENV }} environment\n- Database name: ${{ env.NAME }}-${{ env.ENV }}\n- Username: ${{ env.NAME }}-${{ env.ENV }}\n\n### Checklist\n- [ ] Verify database name and configuration\n- [ ] Confirm database credentials are correct\n- [ ] Validate Terraform syntax\n- [ ] Merge once validated\n\nCloses #${{ env.ISSUE_NUMBER }}")
 
           echo "PR_URL=$PR_URL" >> $GITHUB_ENV
 
@@ -354,8 +297,8 @@ jobs:
 
           **Changes Made:**
           - Added new database module configuration for ${{ env.ENV }} environment
-          - Database name: ${{ needs.extract_info.outputs.application-name }}-${{ env.ENV }}
-          - Username: ${{ needs.extract_info.outputs.application-name }}-${{ env.ENV }}
+          - Database name: ${{ needs.extract_info.outputs.name }}-${{ env.ENV }}
+          - Username: ${{ needs.extract_info.outputs.name }}-${{ env.ENV }}
 
           ### 2. ArgoCD Application PR (Merge AFTER database PR)
           **PR:** ${{ env.PR_URL }}

@@ -11,24 +11,6 @@ body:
       placeholder: "example-application"
     validations:
       required: true
-  
-  - type: input
-    id: repository-name
-    attributes:
-      label: "Repository Name"
-      description: "Enter the name of the repository to deploy the application."
-      placeholder: "example-repository"
-    validations:
-      required: true
-
-  - type: input
-    id: helm-chart-name
-    attributes:
-      label: "Helm Chart Name"
-      description: "Enter the name of the helm chart to deploy the application."
-      placeholder: "example-helm-chart"
-    validations:
-      required: true
 
   - type: input
     id: helm-path
