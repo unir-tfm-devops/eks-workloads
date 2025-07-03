@@ -56,6 +56,5 @@ body:
       options:
         - test
         - prod
-        - both
     validations:
       required: true
