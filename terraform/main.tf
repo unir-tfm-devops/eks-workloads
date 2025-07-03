@@ -5,7 +5,7 @@ resource "helm_release" "argocd_applications" {
   namespace        = var.namespace
   create_namespace = true
 
-  values = [for valuesFile in fileset(path.module, "../environments/**/configuration/values.yaml") : 
+  values = [for valuesFile in fileset(path.module, "../environments/**/configuration/values.yaml") :
     file(valuesFile)
   ]
 }
