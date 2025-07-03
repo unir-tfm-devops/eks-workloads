@@ -18,10 +18,10 @@ spring-boot-template:
       memory: "512Mi"
       cpu: "500m"
   env:
-    DB_URL: "jdbc:postgresql://public-postgres-db.c0li4ko84rxt.us-east-1.rds.amazonaws.com:5432/postgres"
-    DB_USERNAME: "postgres"
+    DB_URL: "jdbc:postgresql://unir-tfm-postgres-test.c0li4ko84rxt.us-east-1.rds.amazonaws.com:5432/spring-boot-template-test"
+    DB_USERNAME: "spring-boot-template-test"
   secrets:
     enabled: true
     secretName: "spring-boot-template-secret"
     data:
-      DB_PASSWORD: "postgres"
+      DB_PASSWORD: "spring-boot-template-test"
