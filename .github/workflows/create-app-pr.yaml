@@ -110,13 +110,17 @@ jobs:
           git clone https://x-access-token:${{ steps.get_token.outputs.token }}@github.com/unir-tfm-devops/${{ needs.extract_info.outputs.name }}.git temp-repo
           cd temp-repo
           if [ -f ".${{ needs.extract_info.outputs.helm-path }}/values.yaml" ]; then
+            # Copy and wrap the values.yaml under the app name
             yq eval ".${{ needs.extract_info.outputs.name }} = load(\".${{ needs.extract_info.outputs.helm-path }}/values.yaml\")" -n > ../environments/${{ needs.extract_info.outputs.environment }}/applications/${{ needs.extract_info.outputs.name }}/values.yaml
-            echo "Successfully copied and wrapped values.yaml from ${{ needs.extract_info.outputs.helm-path }}"
+            
+            # Replace image.tag with the version
+            cd ../environments/${{ needs.extract_info.outputs.environment }}/applications/${{ needs.extract_info.outputs.name }}
+            yq eval ".${{ needs.extract_info.outputs.name }}.image.tag = \"${{ needs.extract_info.outputs.app-version }}\"" -i values.yaml
           else
             echo "Error: values.yaml not found at .${{ needs.extract_info.outputs.helm-path }}/values.yaml"
             exit 1
           fi
-          cd ..
+          cd ../..
           rm -rf temp-repo
 
       - name: Commit Application Config Changes
