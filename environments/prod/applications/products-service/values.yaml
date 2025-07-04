@@ -10,7 +10,7 @@ products-service:
     # -- Docker image repository
     repository: 703671900078.dkr.ecr.us-east-1.amazonaws.com/products-service
     # -- Docker image tag
-    tag: 0.0.0
+    tag: 0.1.0
     # -- Docker image pull policy
     pullPolicy: IfNotPresent
   # -- Service configuration
