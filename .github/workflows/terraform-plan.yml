@@ -51,11 +51,11 @@ jobs:
 
       - name: "Terraform Plan"
         working-directory: terraform
-        run: terraform plan -out .planfile -input=false
+        run: terraform plan -out ../.planfile -input=false
 
       - name: Post PR comment
         if: always()
         uses: borchero/terraform-plan-comment@v2
         with:
           token: ${{ steps.get_token.outputs.token }}
-          planfile: terraform/.planfile
+          planfile: .planfile
