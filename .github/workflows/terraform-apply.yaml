@@ -15,9 +15,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  apply-changes:
-    name: "Apply Changes"
-    uses: unir-tfm-devops/reusable-github-actions/.github/workflows/terraform-apply-aws.yml@main
+  terraform:
+    name: "TF"
+    uses: unir-tfm-devops/reusable-github-actions/.github/workflows/terraform-apply.yml@main
     with:
       working_directory: terraform
+      cloud_provider: aws
     secrets: inherit
