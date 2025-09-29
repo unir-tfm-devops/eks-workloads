@@ -36,9 +36,9 @@ bank-service:
   # -- Environment variables configuration
   env:
     # -- Database URL for PostgreSQL connection
-    DB_URL: "jdbc:postgresql://unir-tfm-postgres-test.c0li4ko84rxt.us-east-1.rds.amazonaws.com:5432/bank-service-test"
+    DB_URL: "jdbc:postgresql://unir-tfm-postgres-prod.c0li4ko84rxt.us-east-1.rds.amazonaws.com:5432/bank-service-prod"
     # -- Database username
-    DB_USERNAME: "bank-service-test"
+    DB_USERNAME: "bank-service-prod"
   # -- Secret configuration for sensitive data
   secrets:
     # -- Enable Kubernetes secrets for sensitive data
@@ -47,4 +47,4 @@ bank-service:
     secretName: "bank-service-secret"
     data:
       # -- Database password
-      DB_PASSWORD: "bank-service-test"
+      DB_PASSWORD: "bank-service-prod"
