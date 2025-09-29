@@ -1,0 +1,8 @@
+apiVersion: v2
+name: bank-service
+version: 1.0.0
+description: Helm chart for bank-service deployment
+dependencies:
+  - name: bank-service
+    version: 0.1.0
+    repository: "http://3.238.99.68"
