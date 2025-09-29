@@ -5,3 +5,9 @@ applications:
       path: environments/prod/applications/spring-boot-template
     destination:
       namespace: prod
+  bank-service-prod:
+    project: default
+    source:
+      path: environments/prod/applications/bank-service
+    destination:
+      namespace: prod
